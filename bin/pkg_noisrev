@@ -1,23 +1,29 @@
 #!/usr/bin/env ruby
 # -*-ruby-*-
 
+require 'thread'
+
 require_relative '../lib/pkg_noisrev/trestle.rb'
+require_relative '../lib/pkg_noisrev/fbsdpackage.rb'
 
 include Pkg_noisrev
 
 $conf = Hash.new
 u = Trestle.new($conf)
 
-$conf[:banner] = "Usage: #{File.basename($0)} [options] hren'"
-$conf[:foobar] = ''
-
+$conf[:banner] = "Usage: #{File.basename($0)} [options]"
+$conf[:pkg_dir] = '/var/db/pkg'
+$conf[:ports_dir] = '/usr/ports'
 
 # --[ main ]------------------------------------------------------------
 
 u.config_parse(['foobar']) {|src|
   o = u.cl_parse(src) # create an OptionParser object
-  o.on('--foobar STR', 'An example of the option --foobar') {|i|
-    $conf[:foobar] = i
+  o.on('--pkg-dir STR', 'Set the alternate package db directory.') {|i|
+    $conf[:pkg_dir] = i
+  }
+  o.on('--ports-dir STR', 'Set the alternate ports db directory.') {|i|
+    $conf[:ports_dir] = i
   }
   u.cl_parse(src, o) # run cl parser
 }
@@ -28,4 +34,9 @@ if $conf[:verbose] >= 2
   pp $conf
 end
 
-puts 'Hello, World!'
+pkg = FbsdPackage.new $conf[:pkg_dir], $conf[:ports_dir]
+pkg.analyze
+
+#pp pkg.data
+pp pkg.data['cdrtools-devel'].ver
+pp pkg.data['cdrtools-devel'].origin
