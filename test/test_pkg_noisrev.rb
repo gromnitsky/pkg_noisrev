@@ -7,7 +7,7 @@ class TestPkg_noisrev_3101147018 < MiniTest::Unit::TestCase
     # this runs every time before test_*
     @cmd = cmd('pkg_noisrev') # get path to the exe & cd to tests directory
 
-    @pkg_dir = 'semis/pkg'
+    @pkg_dir = 'semis/package'
   end
 
   def test_origin

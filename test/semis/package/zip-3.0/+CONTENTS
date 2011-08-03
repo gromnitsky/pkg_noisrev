@@ -1,0 +1,35 @@
+@comment PKG_FORMAT_REVISION:1.1
+@name zip-3.0
+@comment ORIGIN:archivers/zip
+@cwd /usr/local
+bin/zip
+@comment MD5:3356288637a40b57a91a4d6aba569b8f
+bin/zipcloak
+@comment MD5:d25af327a58289224643a1f1e32c6c0f
+bin/zipnote
+@comment MD5:5ede5ea2b1b66ef6df0c4d7273cfcfde
+bin/zipsplit
+@comment MD5:66b8dcf4c82efb83d01ae69701802de3
+man/man1/zip.1.gz
+@comment MD5:ccd5f71cfb25c09e0d5a59e125f4cf5f
+man/man1/zipcloak.1.gz
+@comment MD5:a585a8020b0a0f030e59b0274299c497
+man/man1/zipnote.1.gz
+@comment MD5:f71924cc4f2cce23806f386984c2a3bc
+man/man1/zipsplit.1.gz
+@comment MD5:1720d6f12a3407bae4a319c16d322757
+@unexec rm -f %D/man/cat1/zip.1.gz %D/man/cat1/zip.1 %D/man/cat1/zip.1.gz %D/man/cat1/zip.1.gz.gz %D/man/cat1/zip.1.gz.bz2
+@unexec rm -f %D/man/cat1/zipcloak.1.gz %D/man/cat1/zipcloak.1 %D/man/cat1/zipcloak.1.gz %D/man/cat1/zipcloak.1.gz.gz %D/man/cat1/zipcloak.1.gz.bz2
+@unexec rm -f %D/man/cat1/zipnote.1.gz %D/man/cat1/zipnote.1 %D/man/cat1/zipnote.1.gz %D/man/cat1/zipnote.1.gz.gz %D/man/cat1/zipnote.1.gz.bz2
+@unexec rm -f %D/man/cat1/zipsplit.1.gz %D/man/cat1/zipsplit.1 %D/man/cat1/zipsplit.1.gz %D/man/cat1/zipsplit.1.gz.gz %D/man/cat1/zipsplit.1.gz.bz2
+@cwd .
+@ignore
++COMMENT
+@comment MD5:482c7883e97f4796b330265d21664958
+@ignore
++DESC
+@comment MD5:68ae0f4079192bc009133a979d1022c5
+@ignore
++MTREE_DIRS
+@comment MD5:219b9fb84bdcc9c6d574c11ea5a3efd9
+@mtree +MTREE_DIRS

@@ -1,2 +1,5 @@
 pkg
 html
+*.o
+*.so
+*.so.*

@@ -2,9 +2,11 @@
 # -*-ruby-*-
 
 require 'thread'
+require 'logger'
 
 require_relative '../lib/pkg_noisrev/trestle.rb'
 require_relative '../lib/pkg_noisrev/fbsdpackage.rb'
+require_relative '../lib/pkg_noisrev/fbsdpackageversion.rb'
 
 include Pkg_noisrev
 
@@ -14,6 +16,7 @@ u = Trestle.new($conf)
 $conf[:banner] = "Usage: #{File.basename($0)} [options]"
 $conf[:pkg_dir] = '/var/db/pkg'
 $conf[:ports_dir] = '/usr/ports'
+$conf[:log] = '/tmp/' + Pkg_noisrev::Meta::NAME  + '.log'
 
 # --[ main ]------------------------------------------------------------
 
@@ -34,9 +37,19 @@ if $conf[:verbose] >= 2
   pp $conf
 end
 
-pkg = FbsdPackage.new $conf[:pkg_dir], $conf[:ports_dir]
-pkg.analyze
+File.delete $conf[:log] rescue u.veputs(1, "deleted an old log")
+log = Logger.new($conf[:log])
+log.formatter = proc { |severity, d, p, msg| "#{severity}: #{msg}\n" }
 
-#pp pkg.data
+pp FbsdPackageVersion.version_cmp('4', '22')
+
+exit
+
+pkg = FbsdPackage.new $conf[:pkg_dir], $conf[:ports_dir]
+pkg.analyze log
 pp pkg.data['cdrtools-devel'].ver
 pp pkg.data['cdrtools-devel'].origin
+pp pkg.data['cdrtools-devel'].ports_ver
+
+pkg.data.each {|key, val| puts(key) if val.ports_ver == nil }
+
