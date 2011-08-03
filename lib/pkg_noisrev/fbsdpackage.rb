@@ -1,19 +1,50 @@
-require_relative 'threads.rb'
+require_relative 'threads'
+require_relative 'fbsdpackageversion'
 
 module Pkg_noisrev
   class FbsdPackage
+    include Enumerable
 
-    OnePackage = Struct.new(:ver, :origin, :ports_ver)
+    # Doesn't contain name
+    class OnePackage
+      include Comparable
+      
+      attr_accessor :ver, :origin, :ports_ver
+      
+      def initialize(ver, origin, ports_ver)
+        @ver = ver
+        @origin = origin
+        @ports_ver = ports_ver
+      end
 
-    attr_reader :data, :db_dir
+      def <=>(other)
+        FbsdPackageVersion.version_cmp(@ver, other.ver)
+      end
+    end
+
+    attr_reader :db_dir, :ports_dir
     
     def initialize(db_dir, ports_dir)
       @db_dir = db_dir
       @ports_dir = ports_dir
+      
       @data = {}
+      @data_massage = false
+      
       @queue = FbsdPackage.dir_collect(@db_dir)
     end
 
+    def each(&block)
+      fail "call analyze method first" unless @data_massage
+      @data.each{ |i| block.call i }
+    end
+
+    # by size
+    def <=>(other)
+      fail "call analyze method first" unless @data_massage
+      @data.size <=> other.size
+    end
+    
     def analyze(log = nil)
       pkg_total = @queue.size
       STDOUT.puts "#{pkg_total} total: left% processed/okays/failures | thread number: ok/failed\n"
@@ -44,11 +75,13 @@ module Pkg_noisrev
       stat.alarm # print the statistics every 1 second
       
       thread_pool.each(&:join)
+      @data_massage = true
       stat.alarm_finish
     end
     
     def self.parse_name(name)
       t = name.split '-'
+      return [name, 0] if t.size < 2
       [t[0..-2].join('-'), t.last]
     end
     
@@ -57,14 +90,15 @@ module Pkg_noisrev
       Dir.glob(d +'/*').reject {|i| !File.directory?(i) }.map do |i|
         q.push File.basename(i)
       end
+      fail "no package records in #{d}" unless q.size > 0
       q
     end
 
     def self.origin(db_dir, name)
       File.open(db_dir + '/' + name + '/+CONTENTS') {|f|
-        while line = f.gets
+        f.each {|line|
           break if line.match(/^\s*@comment\s+ORIGIN:(.+)$/)
-        end
+        }
       }
       fail "cannot extract the origin for #{name}" unless $1
       $1
@@ -81,6 +115,41 @@ module Pkg_noisrev
     def types
       [nil, nil, nil, nil]
     end
+
+    def print(mode)
+      p = ->(key, val) {
+        cond = '='
+        if val.ports_ver
+          case FbsdPackageVersion.version_cmp(val.ver, val.ports_ver)
+          when -1
+            cond = '<'
+          when 1
+              cond = '>'
+          end
+        else
+          cond = '?'
+        end
+        puts "%21s %s %-21s %s" % [val.ver, cond, val.ports_ver, key]
+      }
+      
+      case mode
+      when 'missing'
+        @data.reject {|key, val| val.ports_ver }.sort.each {|k,v|
+          p.call(k,v)
+        }
+      when 'outofsync'
+        @data.reject {|key, val|
+          FbsdPackageVersion.version_cmp(val.ver,
+                                         (val.ports_ver ? val.ports_ver : "0")) == 0
+        }.sort.each {|k,v|
+          p.call(k,v)
+        }
+      else
+        @data.sort.each {|k,v|
+          p.call(k,v)
+        }
+      end
+    end
   end
 
   class FbsdPort
@@ -91,7 +160,7 @@ module Pkg_noisrev
       dirsave = Dir.pwd
       
       Dir.chdir ports_dir + '/' + origin
-      r = Trestle.cmd_run('make -V PORTVERSION')
+      r = Trestle.cmd_run('make -V PKGVERSION')
       
       Dir.chdir dirsave
       
@@ -107,12 +176,11 @@ module Pkg_noisrev
 
       begin
         File.open(makefile) {|f|
-          while line = f.gets
+          f.each {|line|
             ['MASTERDIR', 'DISTVERSION', 'PORTVERSION', 'PORTREVISION', 'PORTEPOCH'].each {|idx|
               ver[idx] = $1 if line.match(/^\s*#{idx}\s*[?:!]?=\s*(\S+)$/)
             }
-            
-          end
+          }
         }
       rescue
         fail "(rlevel=#{rlevel}) #{$!}"
@@ -126,6 +194,18 @@ module Pkg_noisrev
         return ver(ports_dir, master_origin, rlevel)
       end
 
+
+      # check if vars contain sane values
+      ok = true
+      ver.each {|k,v|
+        if v !~ /^[a-zA-Z0-9_,.-]+$/
+          ok = false
+#          puts makefile
+          break
+        end
+      }
+      ver['PORTVERSION'] = ver['DISTVERSION'] = nil if !ok
+      
       if ver['PORTVERSION'] || ver['DISTVERSION']
         r = ver['PORTVERSION'] || ver['DISTVERSION']
         r += "_#{ver['PORTREVISION']}" if ver['PORTREVISION']
@@ -141,66 +221,3 @@ module Pkg_noisrev
     
   end
 end
-
-# class FbsdPort
-#   class Mini < Parslet::Parser
-#     root(:lines)
-
-#     rule(:lines) { line.repeat }
-#     rule(:line) { spaces >> expression.repeat >> newline }
-#     rule(:newline) { hspaces? >> match['\r\n'].repeat(1) }
-
-#     rule(:expression) { ((directive.as(:directive) | conditional.as(:conditional) | assignment.as(:ass)) >> spaces).as(:exp) }
-    
-#     rule(:spaces) { space.repeat }
-#     rule(:space) { line_comment | str(' ') }
-
-#     rule(:hspaces?) { match[' \t'].repeat }
-    
-#     rule(:line_comment) { hspaces? >> (str('#') >> (newline.absent? >> any).repeat).as(:comment) }
-#     rule(:something) { ((newline | line_comment).absent? >> any).repeat }
-
-#     # variable assignments (foo=bar)
-#     rule(:assignment) { variable.as(:left) >> hspaces? >> operator.as(:op) >> hspaces? >> something.as(:right) }
-#     rule(:variable) { match('[\w]').repeat(1) }
-#     rule(:operator) { match['[+:?!]'].maybe >> str('=') }
-
-#     # directives (.include "file")
-#     rule(:directive) { str('.') >> (str('include') | str('sinclude') | str('undef') | str('error') | str('warning')).as(:name) >> hspaces? >> something.as(:value) }
-
-#     # conditionals
-#     rule(:conditional) { str('.') >> (str('if') | str('ifdef') | str('ifmake') | str('ifnmake')).as(:name) >> hspaces? >> any.as(:body) >> str('\n.endif') }
-#   end
-
-#   def self.backslash2line(t)
-#     t.gsub!(/\\\s*\n/, " ")
-#     t
-#   end
-  
-#   def self.ver(ports_dir, origin, name)
-#     code1 = %q(
-# c=098
-# v=789\
-# 101112
-# b=  999 
-# n=  123   # comment1
-    
-#   z := "456" # comment 33
-# m =
-
-#   # comment2
-# .include "foo"
-# .if !defined(WITHOUT_HAL)
-# LIB_DEPENDS+=	hal.1:${PORTSDIR}/sysutils/hal
-# CONFIGURE_ARGS+=	--enable-config-hal=yes
-# .else
-# CONFIGURE_ARGS+=	--enable-config-hal=no
-# .endif
-
-# )
-    
-#     src = File.read(ports_dir + '/' + origin + '/' + name + '/' + 'Makefile')
-#     pp Mini.new.parse_with_debug(FbsdPort.backslash2line(code1))
-#     "?"
-#   end
-# end

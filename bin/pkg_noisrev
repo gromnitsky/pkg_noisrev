@@ -6,7 +6,6 @@ require 'logger'
 
 require_relative '../lib/pkg_noisrev/trestle.rb'
 require_relative '../lib/pkg_noisrev/fbsdpackage.rb'
-require_relative '../lib/pkg_noisrev/fbsdpackageversion.rb'
 
 include Pkg_noisrev
 
@@ -17,6 +16,8 @@ $conf[:banner] = "Usage: #{File.basename($0)} [options]"
 $conf[:pkg_dir] = '/var/db/pkg'
 $conf[:ports_dir] = '/usr/ports'
 $conf[:log] = '/tmp/' + Pkg_noisrev::Meta::NAME  + '.log'
+$conf[:mode] = 'all' # or 'outofsync', 'missing'
+$conf[:int_attempts] = 2
 
 # --[ main ]------------------------------------------------------------
 
@@ -27,6 +28,12 @@ u.config_parse(['foobar']) {|src|
   }
   o.on('--ports-dir STR', 'Set the alternate ports db directory.') {|i|
     $conf[:ports_dir] = i
+  }
+  o.on('--outofsync', 'Print only out of sync packages.') {|i|
+    $conf[:mode] = 'outofsync'
+  }
+  o.on('--missing', 'Print only packages that doesn\'t exists in ports.') {|i|
+    $conf[:mode] = 'missing'
   }
   u.cl_parse(src, o) # run cl parser
 }
@@ -41,15 +48,15 @@ File.delete $conf[:log] rescue u.veputs(1, "deleted an old log")
 log = Logger.new($conf[:log])
 log.formatter = proc { |severity, d, p, msg| "#{severity}: #{msg}\n" }
 
-pp FbsdPackageVersion.version_cmp('4', '22')
-
-exit
+Signal.trap(:INT) do
+  if $conf[:int_attempts] >= 0
+    print "\nWoot! (#{$conf[:int_attempts]})\n"
+  else
+    print "\n"
+  end
+  $conf[:int_attempts] == -1 ? exit(1) : $conf[:int_attempts] -= 1
+end
 
 pkg = FbsdPackage.new $conf[:pkg_dir], $conf[:ports_dir]
 pkg.analyze log
-pp pkg.data['cdrtools-devel'].ver
-pp pkg.data['cdrtools-devel'].origin
-pp pkg.data['cdrtools-devel'].ports_ver
-
-pkg.data.each {|key, val| puts(key) if val.ports_ver == nil }
-
+pkg.print $conf[:mode]
