@@ -16,7 +16,7 @@ $conf[:banner] = "Usage: #{File.basename($0)} [options]"
 $conf[:pkg_dir] = '/var/db/pkg'
 $conf[:ports_dir] = '/usr/ports'
 $conf[:log] = '/tmp/' + Pkg_noisrev::Meta::NAME  + '.log'
-$conf[:mode] = 'all' # or 'outofsync', 'missing'
+$conf[:mode] = 'all' # or 'outofsync', 'missing', 'likeportmaster'
 $conf[:int_attempts] = 2
 
 # --[ main ]------------------------------------------------------------
@@ -34,6 +34,9 @@ u.config_parse(['foobar']) {|src|
   }
   o.on('--missing', 'Print only packages that doesn\'t exists in ports.') {|i|
     $conf[:mode] = 'missing'
+  }
+  o.on('--likeportmaster', 'Print like portmaster -L') {|i|
+    $conf[:mode] = 'likeportmaster'
   }
   u.cl_parse(src, o) # run cl parser
 }

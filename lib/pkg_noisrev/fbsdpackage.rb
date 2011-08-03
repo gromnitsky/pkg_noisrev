@@ -9,16 +9,23 @@ module Pkg_noisrev
     class OnePackage
       include Comparable
       
-      attr_accessor :ver, :origin, :ports_ver
+      CATEGORY = ['Root (No dependencies, not depended on)',
+                  'Trunk (No dependencies, are depended on)',
+                  'Branch (Have dependencies, are depended on)',
+                  'Leaf (Have dependencies, not depended on)']
+      attr_accessor :name, :ver, :origin, :ports_ver, :category
       
-      def initialize(ver, origin, ports_ver)
+      def initialize(name, ver, origin, ports_ver, category)
+        @name = name
         @ver = ver
         @origin = origin
         @ports_ver = ports_ver
+        @category = category
       end
 
+      # by name
       def <=>(other)
-        FbsdPackageVersion.version_cmp(@ver, other.ver)
+        @name <=> other.name
       end
     end
 
@@ -28,7 +35,7 @@ module Pkg_noisrev
       @db_dir = db_dir
       @ports_dir = ports_dir
       
-      @data = {}
+      @data = []
       @data_massage = false
       
       @queue = FbsdPackage.dir_collect(@db_dir)
@@ -56,13 +63,16 @@ module Pkg_noisrev
           @queue.size.times {
             item = @queue.pop(true) rescue break
             r = FbsdPackage.parse_name item
+            category = nil
             begin
-              origin = FbsdPackage.origin @db_dir, item
+              origin, category = FbsdPackage.origin @db_dir, item
+              fail "cannot extract the origin for #{name}" unless origin
+              
               pver = FbsdPort.ver @ports_dir, origin
-              @data[r.first] = OnePackage.new(r.last, origin, pver)
+              @data << OnePackage.new(r.first, r.last, origin, pver, category)
             rescue
               MyThread.current.stat.failed += 1
-              @data[r.first] = OnePackage.new(r.last, nil, nil)
+              @data << OnePackage.new(r.first, r.last, nil, nil, category)
               log.error "#{$!}" if log
             else
               MyThread.current.stat.ok += 1
@@ -87,7 +97,7 @@ module Pkg_noisrev
     
     def self.dir_collect(d)
       q = Queue.new
-      Dir.glob(d +'/*').reject {|i| !File.directory?(i) }.map do |i|
+      Dir.glob("#{d}/*").reject {|i| !File.directory?(i) }.map do |i|
         q.push File.basename(i)
       end
       fail "no package records in #{d}" unless q.size > 0
@@ -95,32 +105,36 @@ module Pkg_noisrev
     end
 
     def self.origin(db_dir, name)
-      File.open(db_dir + '/' + name + '/+CONTENTS') {|f|
-        f.each {|line|
-          break if line.match(/^\s*@comment\s+ORIGIN:(.+)$/)
-        }
-      }
-      fail "cannot extract the origin for #{name}" unless $1
-      $1
-    end
-
-    # go thought @data and return a list of 4 lists:
-    #
-    # 0--Root (No dependencies, not depended on)
-    # 1--Trunk (No dependencies, are depended on)
-    # 2--Branch (Have dependencies, are depended on)
-    # 3--Leaf (Have dependencies, not depended on)
-    
-    # TODO
-    def types
-      [nil, nil, nil, nil]
+      contents = File.read(db_dir + '/' + name + '/+CONTENTS')
+      db_required_by = db_dir + '/' + name + '/' + '+REQUIRED_BY'
+      
+      category = nil
+      origin = nil
+      has_dep = contents.match(/^\s*@pkgdep /)
+      
+      # Set a package category
+      #
+      # 0--Root (No dependencies, not depended on)
+      # 1--Trunk (No dependencies, are depended on)
+      # 2--Branch (Have dependencies, are depended on)
+      # 3--Leaf (Have dependencies, not depended on)
+      if File.size?(db_required_by)
+        category = 1
+        category = 2 if has_dep
+      else
+        category = 0
+        category = 3 if has_dep
+      end
+      
+      origin = $1 if contents.match(/^\s*@comment\s+ORIGIN:(.+)$/)
+      [origin, category]
     end
 
     def print(mode)
-      p = ->(key, val) {
+      p = ->(item) {
         cond = '='
-        if val.ports_ver
-          case FbsdPackageVersion.version_cmp(val.ver, val.ports_ver)
+        if item.ports_ver
+          case FbsdPackageVersion.version_cmp(item.ver, item.ports_ver)
           when -1
             cond = '<'
           when 1
@@ -129,26 +143,69 @@ module Pkg_noisrev
         else
           cond = '?'
         end
-        puts "%21s %s %-21s %s" % [val.ver, cond, val.ports_ver, key]
+        puts "%21s %s %-21s %s" % [item.ver, cond, item.ports_ver, item.name]
       }
       
       case mode
       when 'missing'
-        @data.reject {|key, val| val.ports_ver }.sort.each {|k,v|
-          p.call(k,v)
-        }
+        @data.reject {|i| i.ports_ver }.sort.each {|idx| p.call idx }
       when 'outofsync'
-        @data.reject {|key, val|
-          FbsdPackageVersion.version_cmp(val.ver,
-                                         (val.ports_ver ? val.ports_ver : "0")) == 0
-        }.sort.each {|k,v|
-          p.call(k,v)
-        }
+        @data.reject {|i|
+          FbsdPackageVersion.version_cmp(i.ver,
+                                         (i.ports_ver ? i.ports_ver : "0")) == 0
+        }.sort.each {|idx| p.call idx }
+      when 'likeportmaster'
+        print_like_portmaster
       else
-        @data.sort.each {|k,v|
-          p.call(k,v)
-        }
+        @data.sort.each {|idx| p.call(idx) }
       end
+    end
+
+    def print_like_portmaster
+      root = []
+      trunk = []
+      branch = []
+      leaf = []
+      @data.sort.each {|i|
+        case i.category
+        when 0
+          root << i
+        when 1
+          trunk << i
+        when 2
+          branch << i
+        when 3
+          leaf << i
+        else
+          fail "#{i.name} has no category!"
+        end
+      }
+
+      outofsync = 0
+      p = ->(category, data) {
+        return if data.size == 0
+        puts "* #{OnePackage::CATEGORY[category]}, #{data.size}"
+        data.each {|i|
+          puts i.name + '-' + i.ver
+          if i.ports_ver
+            if FbsdPackageVersion.version_cmp(i.ver, i.ports_ver) != 0
+              puts "  => Ports have another version: #{i.ports_ver}"
+              outofsync += 1
+            end
+          else
+            puts "  => Not found in ports"
+          end
+        }
+        puts ""
+      }
+
+      puts ""
+      p.call 0, root
+      p.call 1, trunk
+      p.call 2, branch
+      p.call 3, leaf
+
+      puts "Total #{@data.size}, out of sync #{outofsync}."
     end
   end
 

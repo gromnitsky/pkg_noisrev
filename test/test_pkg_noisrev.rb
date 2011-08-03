@@ -11,6 +11,7 @@ class TestPkg_noisrev_3101147018 < MiniTest::Unit::TestCase
   end
 
   def test_origin
-    assert_equal(FbsdPackage.origin(@pkg_dir, 'zip-3.0'), 'archivers/zip')
+    assert_equal(FbsdPackage.origin(@pkg_dir, 'zip-3.0'),
+                 ['archivers/zip', 1])
   end
 end
