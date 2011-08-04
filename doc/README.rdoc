@@ -1,6 +1,6 @@
 =Name
 
-pkg_noisrev-- [TODO: write a summary here.]
+pkg_noisrev--a fast way to summarize installed versions of FreeBSD packages.
 
 
 ==Synopsis
@@ -10,7 +10,26 @@ pkg_noisrev-- [TODO: write a summary here.]
 
 ==Description
 
-The pkg_noisrev utility [TODO: write a description here.]
+The pkg_noisrev utility is a <b>very fast</b> version of pkg_version
+program that ships with FreeBSD. Consider the example from vitalized
+FreeBSD 8.2 (with 696 installed packages) where virtual hdd is a main
+performance bottle neck:
+
+ % time pkg_version
+ [...]
+ 21.006u 68.076s 1:59.73 74.3%   403+713k 1155+0io 3pf+0w
+
+ % time pkg_noisrev
+ [...]
+ 12.261u 10.249s 0:26.29 85.5%   95+1128k 0+0io 0pf+0w
+
+pkg_noisrev is basically <b>~ 4.6 times faster</b>. It achieves this
+speed by doing its work in several parallel threads + making some
+not-so-interesting tricks of extracting version strings from Makefiles.
+
+pkg_noisrev also adds filtering to the output, thus you can only see out
+of sync packages, for example. If you are a portmaster user, you may
+like <tt>--likeportmaster</tt> option (I do!).
 
 The options are as follows:
 
@@ -27,7 +46,33 @@ The options are as follows:
                             times, viz. <tt>-vv</tt> dumps even more
                             debug info.
 
---foobar NAME::             Huh?
+--pkg-dir STR::             Set the alternate package db directory.
+
+--ports-dir STR::           Set the alternate ports db directory.
+
+--outofsync::               Filter all but out of sync packages.
+
+--missing::                 Filter all but packages that doesn't exists
+                            in ports.
+
+--likeportmaster::          Print like (but not quite) "portmaster -L".
+
+
+==Installation
+
+(Only if you are not installing the gem.)
+
+pkg_noisrev ships with a shared library (the comparator of a 2
+versions-as-a-string that was extracted from pkg_version sources) which
+must be compiled before you can use the program.
+
+cd to a directory with pkg_noisrev sources and type:
+
+ % rake mydll:default
+
+Then run <tt>bin/pkg_noisrev</tt> or make a symlink to it in one of your
+directories in PATH.
+
 
 ==Configuration
 
@@ -52,5 +97,6 @@ gemdir`/gems/pkg_noisrev-x.y.z/etc/</tt> directory for samples.
 ==Examples
 
  % ri Pkg_noisrev
- % pkg_noisrev --config-dirs
- % pkg_noisrev -V
+ % pkg_noisrev --likeportmaster
+ % pkg_noisrev --outofsync
+ % pkg_noisrev --missing --likeportmaster

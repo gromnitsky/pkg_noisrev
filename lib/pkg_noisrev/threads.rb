@@ -1,7 +1,7 @@
 module Pkg_noisrev
 
   class Spectator
-    def initialize(thread_pool, total, sec, stream = STDOUT)
+    def initialize(thread_pool, total, sec, stream = $stdout)
       @thread_pool = thread_pool
       @total = total
       @sec = sec

@@ -5,7 +5,7 @@ module Pkg_noisrev
   class FbsdPackage
     include Enumerable
 
-    # Doesn't contain name
+    # A placeholder for package.
     class OnePackage
       include Comparable
       
@@ -59,8 +59,8 @@ module Pkg_noisrev
     
     def analyze(log = nil)
       pkg_total = @queue.size
-      STDOUT.puts "#{pkg_total} total: left% processed/okays/failures | thread number: ok/failed\n"
-      STDOUT.flush
+      $stdout.puts "#{pkg_total} total: left% processed/okays/failures | thread number: ok/failed\n"
+      $stdout.flush
       
       thread_pool = []
       4.times {|i|
@@ -110,6 +110,7 @@ module Pkg_noisrev
       q
     end
 
+    # Return something like ['foo/bar', 3]
     def self.origin(db_dir, name)
       contents = File.read "#{db_dir}/#{name}/+CONTENTS"
       db_required_by = "#{db_dir}/#{name}/+REQUIRED_BY"
@@ -245,7 +246,10 @@ module Pkg_noisrev
   end
 
   class FbsdPort
-    # The last resort method of getting a version number: execute 'make' command
+    # The last resort method of getting a version number: execute 'make'
+    # command.
+    #
+    # Return a string that represents a port version.
     def self.ver_slow(ports_dir, origin)
       # cannot use just a block for Dir.chdir due to a annoing warning
       # under the another thread
@@ -259,7 +263,12 @@ module Pkg_noisrev
       fail "even executing make didn't help #{origin}" if r[0] != 0
       r[2].strip
     end
-    
+
+    # Return a string that represents a port version.
+    #
+    # Tries to do that in 2 ways: (a) by primitive regexp parsing of
+    # Makefile and if that fails (b) by executing external 'make'
+    # command.
     def self.ver(ports_dir, origin, rlevel = 0)
       fail "recursion level for #{origin} is too high" if rlevel >= 3
       

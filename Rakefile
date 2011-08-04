@@ -8,7 +8,7 @@ require 'rubygems/package_task'
 gem 'rdoc'
 require 'rdoc/task'
 
-require_relative 'lib/pkg_noisrev/dll/rakefile'
+require_relative 'ext/rakefile'
 require_relative 'lib/pkg_noisrev/meta'
 include Pkg_noisrev
 
@@ -17,7 +17,7 @@ require_relative 'test/rake_git'
 spec = Gem::Specification.new {|i|
   i.name = Meta::NAME
   i.version = Meta::VERSION
-  i.summary = 'TO DO: fill this variable'
+  i.summary = 'A fast way to summarize installed versions of FreeBSD packages'
   i.description = i.summary + '.'
   i.author = Meta::AUTHOR
   i.email = Meta::EMAIL
@@ -33,6 +33,8 @@ spec = Gem::Specification.new {|i|
   
   i.rdoc_options << '-m' << 'doc/README.rdoc'
   i.extra_rdoc_files = FileList['doc/*']
+
+  i.extensions << 'ext/extconf.rb'
 
   i.add_dependency('open4', '>= 1.1.0')
   i.add_development_dependency('git', '>= 1.2.5')

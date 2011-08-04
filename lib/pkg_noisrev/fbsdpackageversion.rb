@@ -4,10 +4,15 @@ module Pkg_noisrev
   module FbsdPackageVersion
     extend DL::Importer
     
-    DLL_PATH = File.dirname(__FILE__) + '/dll'
-    DLL_NAME = 'version.so.1'
-  
-    dlload(DLL_PATH + '/' + DLL_NAME)
+    DLL_PATH = [File.dirname(__FILE__),
+                File.absolute_path("#{File.dirname(__FILE__)}/../../ext")]
+    DLL_NAME = 'version.so'
+
+    begin
+      dlload(DLL_PATH[0] + '/' + DLL_NAME)
+    rescue
+      dlload(DLL_PATH[1] + '/' + DLL_NAME)
+    end
     extern 'int version_cmp(const char *, const char *)'
   end
 end
