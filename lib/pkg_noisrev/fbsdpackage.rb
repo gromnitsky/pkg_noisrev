@@ -9,10 +9,11 @@ module Pkg_noisrev
     class OnePackage
       include Comparable
       
-      CATEGORY = ['Root (No dependencies, not depended on)',
-                  'Trunk (No dependencies, are depended on)',
-                  'Branch (Have dependencies, are depended on)',
-                  'Leaf (Have dependencies, not depended on)']
+      CATEGORY = ['Root (no dependencies, not depended on)',
+                  'Trunk (no dependencies, are depended on)',
+                  'Branch (have dependencies, are depended on)',
+                  'Leaf (have dependencies, not depended on)',
+                  'Unknown category']
       attr_accessor :name, :ver, :origin, :ports_ver, :category
       
       def initialize(name, ver, origin, ports_ver, category)
@@ -39,6 +40,10 @@ module Pkg_noisrev
       @data_massage = false
       
       @queue = FbsdPackage.dir_collect(@db_dir)
+    end
+
+    def size
+      @data.size
     end
 
     def each(&block)
@@ -92,7 +97,7 @@ module Pkg_noisrev
     
     def self.parse_name(name)
       t = name.split '-'
-      return [name, 0] if t.size < 2
+      return [name, '0'] if t.size < 2
       [t[0..-2].join('-'), t.last]
     end
     
@@ -106,8 +111,8 @@ module Pkg_noisrev
     end
 
     def self.origin(db_dir, name)
-      contents = File.read(db_dir + '/' + name + '/+CONTENTS')
-      db_required_by = db_dir + '/' + name + '/' + '+REQUIRED_BY'
+      contents = File.read "#{db_dir}/#{name}/+CONTENTS"
+      db_required_by = "#{db_dir}/#{name}/+REQUIRED_BY"
       
       category = nil
       origin = nil
@@ -183,6 +188,7 @@ module Pkg_noisrev
       trunk = []
       branch = []
       leaf = []
+      godknowswhat = []
       packages.sort.each {|i|
         case i.category
         when 0
@@ -194,7 +200,7 @@ module Pkg_noisrev
         when 3
           leaf << i
         else
-          fail "#{i.name} has no category!"
+          godknowswhat << i
         end
       }
 
@@ -232,6 +238,7 @@ module Pkg_noisrev
       p.call 1, trunk
       p.call 2, branch
       p.call 3, leaf
+      p.call 4, godknowswhat
 
       puts "Total #{packages.size}, out of sync #{outofsync}."
     end
@@ -323,7 +330,7 @@ module Pkg_noisrev
           }
         }
       rescue
-        Trestle.warnx "parsing #{db_moved} failed: $!"
+        Trestle.warnx "parsing #{db_moved} failed: #{$!}"
         return {}
       end
 

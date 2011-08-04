@@ -61,6 +61,10 @@ Signal.trap(:INT) do
   $conf[:int_attempts] == -1 ? exit(1) : $conf[:int_attempts] -= 1
 end
 
-pkg = FbsdPackage.new $conf[:pkg_dir], $conf[:ports_dir]
+begin
+  pkg = FbsdPackage.new $conf[:pkg_dir], $conf[:ports_dir]
+rescue
+  Trestle.errx 1, $!.to_s
+end
 pkg.analyze log
 pkg.print $conf[:mode], $conf[:filter]
