@@ -1,0 +1,23 @@
+# MOVED -- A list of (recently) moved or removed ports
+#
+# Each entry consists of a single line containing the following four
+# fields in the order named, separated with the pipe (`|') character:
+#
+#     Port:	A port that was moved (category/portname)
+#     Moved to:	Where the port was moved to, or which port users can
+#		and should migrate to (category/portname); no entry
+#		indicates that the port was deleted
+#     Date:	When the moving or the removal was done (YYYY-MM-DD,
+#		in PST/PDT)
+#     Why:	The reason why the port was moved or removed
+#
+# Port|Moved to|Date|Why
+
+mail/claws-mail-clamav||2009-02-03|Has expired: has been broken for more than 6 months
+x11-fonts/xmbdfed||2011-05-02|Has expired: Upstream disapear and distfile is no more available
+audio/dap||2011-05-02|Has expired: Upstream disapear and distfile is no more available
+audio/gdrdao||2011-05-02|Has expired: Upstream disapear and no more distfiles available
+
+databases/gmysql||2011-05-02|Has expired: Upstream disapear and distfile is no more available
+deskutils/kuake||2011-05-02|Has expired: Upstream disapear and distfile is no more available
+science/bblimage|science/pyvox|2011-07-28|track the upstream name change

@@ -1,0 +1,47 @@
+@comment PKG_FORMAT_REVISION:1.1
+@name xmbdfed-4.7.1_2
+@comment ORIGIN:x11-fonts/xmbdfed
+@cwd /usr/local
+@pkgdep xextproto-7.1.1
+@comment DEPORIGIN:x11/xextproto
+@pkgdep xbitmaps-1.1.0
+@comment DEPORIGIN:x11/xbitmaps
+@pkgdep printproto-1.0.4
+@comment DEPORIGIN:x11/printproto
+@pkgdep kbproto-1.0.5
+@comment DEPORIGIN:x11/kbproto
+@pkgdep pkg-config-0.25_1
+@comment DEPORIGIN:devel/pkg-config
+@pkgdep freetype2-2.4.4
+@comment DEPORIGIN:print/freetype2
+@pkgdep xproto-7.0.16
+@comment DEPORIGIN:x11/xproto
+@pkgdep libXdmcp-1.0.3
+@comment DEPORIGIN:x11/libXdmcp
+@pkgdep libXau-1.0.6
+@comment DEPORIGIN:x11/libXau
+@pkgdep libX11-1.3.6,1
+@comment DEPORIGIN:x11/libX11
+@pkgdep libXext-1.1.2,1
+@comment DEPORIGIN:x11/libXext
+@pkgdep libXp-1.0.0,1
+@comment DEPORIGIN:x11/libXp
+@pkgdep libICE-1.0.7,1
+@comment DEPORIGIN:x11/libICE
+@pkgdep libSM-1.1.1_3,1
+@comment DEPORIGIN:x11/libSM
+@pkgdep libXt-1.0.9
+@comment DEPORIGIN:x11-toolkits/libXt
+@pkgdep libXpm-3.5.7
+@comment DEPORIGIN:x11/libXpm
+@pkgdep libXmu-1.1.0,1
+@comment DEPORIGIN:x11-toolkits/libXmu
+@pkgdep libXaw-1.0.8,1
+@comment DEPORIGIN:x11-toolkits/libXaw
+@pkgdep open-motif-2.2.3_6
+@comment DEPORIGIN:x11-toolkits/open-motif
+bin/xmbdfed
+@comment MD5:70fe0a284a6ef3c16d89ce9343f3fa48
+man/man1/xmbdfed.1.gz
+@comment MD5:1fded0314bd85a5f8b97f721307867d4
+@unexec rm -f %D/man/cat1/xmbdfed.1.gz %D/man/cat1/xmbdfed.1 %D/man/cat1/xmbdfed.1.gz %D/man/cat1/xmbdfed.1.gz.gz %D/man/cat1/xmbdfed.1.gz.bz2

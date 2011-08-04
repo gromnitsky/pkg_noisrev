@@ -1,3 +1,6 @@
 -*-text-*-
 
-- look for missing ports in /usr/ports/MOVED file
++ look for missing ports in /usr/ports/MOVED file
++ apply filtering to --likeportmaster too
+- docs
+- tests

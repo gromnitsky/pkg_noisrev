@@ -1,6 +1,6 @@
 # Building shared libraries.
 
-require 'json'
+require 'pp'
 
 module MyDll
   PATH = File.dirname(__FILE__)
@@ -22,8 +22,8 @@ namespace 'mydll' do
   
   desc "Print all staff that _can_ be generated"
   task :print_gen do
-    puts MyDll::OBJ.to_a.to_json
-    puts MyDll::DLL.to_a.to_json
+    pp MyDll::OBJ
+    pp MyDll::DLL
   end
 
   rule '.o' => ['.c'] do |i|

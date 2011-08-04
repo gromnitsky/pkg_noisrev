@@ -63,6 +63,7 @@ module Pkg_noisrev
           @queue.size.times {
             item = @queue.pop(true) rescue break
             r = FbsdPackage.parse_name item
+            origin = nil
             category = nil
             begin
               origin, category = FbsdPackage.origin @db_dir, item
@@ -72,7 +73,7 @@ module Pkg_noisrev
               @data << OnePackage.new(r.first, r.last, origin, pver, category)
             rescue
               MyThread.current.stat.failed += 1
-              @data << OnePackage.new(r.first, r.last, nil, nil, category)
+              @data << OnePackage.new(r.first, r.last, origin, nil, category)
               log.error "#{$!}" if log
             else
               MyThread.current.stat.ok += 1
@@ -130,7 +131,7 @@ module Pkg_noisrev
       [origin, category]
     end
 
-    def print(mode)
+    def print(mode, filter)
       p = ->(item) {
         cond = '='
         if item.ports_ver
@@ -145,28 +146,44 @@ module Pkg_noisrev
         end
         puts "%21s %s %-21s %s" % [item.ver, cond, item.ports_ver, item.name]
       }
-      
-      case mode
-      when 'missing'
-        @data.reject {|i| i.ports_ver }.sort.each {|idx| p.call idx }
+
+      packages = []
+      #
+      # filter packages
+      #
+      case filter
+      when ""
+        # all, no filter
+        packages = @data.sort
       when 'outofsync'
-        @data.reject {|i|
+        packages = @data.reject {|i|
           FbsdPackageVersion.version_cmp(i.ver,
                                          (i.ports_ver ? i.ports_ver : "0")) == 0
-        }.sort.each {|idx| p.call idx }
-      when 'likeportmaster'
-        print_like_portmaster
+        }.sort
+      when 'missing'
+        packages = @data.reject {|i| i.ports_ver }.sort
       else
-        @data.sort.each {|idx| p.call(idx) }
+        fail "invalid filter: #{filter}"
+      end
+
+      #
+      # print packages
+      #
+      if mode == 'likeportmaster'
+        FbsdPackage.print_like_portmaster @ports_dir, packages
+      else
+        packages.each {|idx| p.call(idx) }
       end
     end
 
-    def print_like_portmaster
+    def self.print_like_portmaster(ports_dir, packages)
+      moved = FbsdPort.moved(ports_dir)
+        
       root = []
       trunk = []
       branch = []
       leaf = []
-      @data.sort.each {|i|
+      packages.sort.each {|i|
         case i.category
         when 0
           root << i
@@ -193,7 +210,18 @@ module Pkg_noisrev
               outofsync += 1
             end
           else
-            puts "  => Not found in ports"
+            outofsync += 1
+            # check missing package in MOVED db
+            if m = moved[i.origin]
+              if m.movedto == ""
+                puts "  => Deleted at #{m.date}: #{m.why}"
+              else
+                puts "  => Moved at #{m.date} to #{m.movedto}: #{m.why}"
+              end
+            else
+              # this is your hand made package or your ports are old
+              puts "  => Not found in ports"
+            end
           end
         }
         puts ""
@@ -205,7 +233,7 @@ module Pkg_noisrev
       p.call 2, branch
       p.call 3, leaf
 
-      puts "Total #{@data.size}, out of sync #{outofsync}."
+      puts "Total #{packages.size}, out of sync #{outofsync}."
     end
   end
 
@@ -274,6 +302,32 @@ module Pkg_noisrev
       return FbsdPort.ver_slow(ports_dir, origin) rescue fail "(rlevel=#{rlevel}) #{$!}"
       
       fail "(rlevel=#{rlevel}) cannot extract the version for #{makefile}"
+    end
+
+    # A placeholder for moved or removed single port.
+    #
+    # :movedto may be an empty string (indicates that the port was deleted)
+    Moved = Struct.new :movedto, :date, :why
+    
+    # Parse /usr/ports/MOVED file into a hash.
+    # Return an empty hash on error.
+    def self.moved(ports_dir)
+      db_moved = ports_dir + '/MOVED'
+      r = {}
+      begin
+        File.open(db_moved) {|f|
+          f.each {|line|
+            next if line =~ /^\s*(#.*|\s*)$/ # comment or blank line
+            next if (entry = line.split '|').size != 4
+            r[entry.first] = Moved.new *entry[1..-1]
+          }
+        }
+      rescue
+        Trestle.warnx "parsing #{db_moved} failed: $!"
+        return {}
+      end
+
+      r
     end
     
   end

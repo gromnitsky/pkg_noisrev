@@ -16,7 +16,8 @@ $conf[:banner] = "Usage: #{File.basename($0)} [options]"
 $conf[:pkg_dir] = '/var/db/pkg'
 $conf[:ports_dir] = '/usr/ports'
 $conf[:log] = '/tmp/' + Pkg_noisrev::Meta::NAME  + '.log'
-$conf[:mode] = 'all' # or 'outofsync', 'missing', 'likeportmaster'
+$conf[:filter] = '' # or 'outofsync', 'missing'
+$conf[:mode] = 'default' # or 'likeportmaster'
 $conf[:int_attempts] = 2
 
 # --[ main ]------------------------------------------------------------
@@ -29,11 +30,11 @@ u.config_parse(['foobar']) {|src|
   o.on('--ports-dir STR', 'Set the alternate ports db directory.') {|i|
     $conf[:ports_dir] = i
   }
-  o.on('--outofsync', 'Print only out of sync packages.') {|i|
-    $conf[:mode] = 'outofsync'
+  o.on('--outofsync', 'Filter all but out of sync packages.') {|i|
+    $conf[:filter] = 'outofsync'
   }
-  o.on('--missing', 'Print only packages that doesn\'t exists in ports.') {|i|
-    $conf[:mode] = 'missing'
+  o.on('--missing', 'Filter all but packages that doesn\'t exists in ports.') {|i|
+    $conf[:filter] = 'missing'
   }
   o.on('--likeportmaster', 'Print like (but not quite) "portmaster -L".') {|i|
     $conf[:mode] = 'likeportmaster'
@@ -62,4 +63,4 @@ end
 
 pkg = FbsdPackage.new $conf[:pkg_dir], $conf[:ports_dir]
 pkg.analyze log
-pkg.print $conf[:mode]
+pkg.print $conf[:mode], $conf[:filter]
