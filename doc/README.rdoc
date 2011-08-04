@@ -11,7 +11,7 @@ pkg_noisrev--a fast way to summarize installed versions of FreeBSD packages.
 ==Description
 
 The pkg_noisrev utility is a <b>very fast</b> version of pkg_version
-program that ships with FreeBSD. Consider the example from vitalized
+program that ships with FreeBSD. Consider the example from virtualized
 FreeBSD 8.2 (with 696 installed packages) where virtual hdd is a main
 performance bottle neck:
 
@@ -27,9 +27,9 @@ pkg_noisrev is basically <b>~ 4.6 times faster</b>. It achieves this
 speed by doing its work in several parallel threads + making some
 not-so-interesting tricks of extracting version strings from Makefiles.
 
-pkg_noisrev also adds filtering to the output, thus you can only see out
-of sync packages, for example. If you are a portmaster user, you may
-like <tt>--likeportmaster</tt> option (I do!).
+pkg_noisrev also adds filtering to the output, thus you can, for
+example, only see out of sync packages. If you are a portmaster user,
+you may like <tt>--likeportmaster</tt> option (I do!).
 
 The options are as follows:
 
