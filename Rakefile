@@ -8,6 +8,7 @@ require 'rubygems/package_task'
 gem 'rdoc'
 require 'rdoc/task'
 
+require_relative 'lib/pkg_noisrev/dll/rakefile'
 require_relative 'lib/pkg_noisrev/meta'
 include Pkg_noisrev
 
@@ -15,7 +16,7 @@ require_relative 'test/rake_git'
 
 spec = Gem::Specification.new {|i|
   i.name = Meta::NAME
-  i.version = `bin/#{i.name} -V`
+  i.version = Meta::VERSION
   i.summary = 'TO DO: fill this variable'
   i.description = i.summary + '.'
   i.author = Meta::AUTHOR
@@ -50,3 +51,6 @@ end
 Rake::TestTask.new do |i|
   i.test_files = FileList['test/test_*.rb']
 end
+
+task default: ['mydll:default', :repackage]
+task clean: ['mydll:clean']
