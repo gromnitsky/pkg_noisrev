@@ -1,3 +1,9 @@
+=== 0.0.2
+
+Fri Aug  5 13:13:30 EEST 2011
+
+- A log is created only if -v CLO is supplied.
+
 === 0.0.1
 
 Mon, 1 Aug 2011 12:34:04 +0300

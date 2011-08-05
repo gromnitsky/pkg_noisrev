@@ -42,9 +42,8 @@ The options are as follows:
 
 -V::                        Show version and exit.
 
--v::                        Be more verbose. You can supply it several
-                            times, viz. <tt>-vv</tt> dumps even more
-                            debug info.
+-v::                        Tries to create a log in
+                            /tmp/pkg_noisrev.log file.
 
 --pkg-dir STR::             Set the alternate package db directory.
 

@@ -48,9 +48,17 @@ if $conf[:verbose] >= 2
   pp $conf
 end
 
-File.delete $conf[:log] rescue nil
-log = Logger.new($conf[:log])
-log.formatter = proc { |severity, d, p, msg| "#{severity}: #{msg}\n" }
+log = nil
+if $conf[:verbose] >= 1
+    File.delete $conf[:log] rescue nil
+  begin
+    log = Logger.new($conf[:log], 'weekly')
+    File.chmod 0666, $conf[:log]
+    log.formatter = proc { |severity, d, p, msg| "#{severity}: #{msg}\n" }
+    log.info 'New Iteration'
+  rescue
+  end
+end
 
 Signal.trap(:INT) do
   if $conf[:int_attempts] >= 0
